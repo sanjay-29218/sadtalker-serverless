@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # os.makedirs(RESULTS_DIR, exist_ok=True) # Commented out
 
 # --- Checkpoint Path ---
-CHECKPOINT_PATH = '/workspace/checkpoints' # Define as variable for clarity
+CHECKPOINT_PATH = '/runpod-volume/checkpoints' # Use relative path for local/default execution
 CONFIG_PATH = 'src/config'
 
 logging.info(f"Attempting to initialize SadTalker...")
