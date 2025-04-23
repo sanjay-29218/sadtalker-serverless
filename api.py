@@ -11,9 +11,9 @@ RESULTS_DIR = "/workspace/results" # Changed to workspace
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-# Initialize SadTalker with network volume path
+# Initialize SadTalker with the correct directory path
 sad_talker = SadTalker(
-    checkpoint_path='/workspace/checkpoints',  # Network volume path
+    checkpoint_path='checkpoints',  # Pass the directory, not the specific file
     config_path='src/config', 
     lazy_load=True
 )
