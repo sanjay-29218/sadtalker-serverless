@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements files first for better caching
 COPY requirements.txt req.txt requirements3d.txt ./
-RUN pip install --no-cache-dir -r requirements.txt -r 
+RUN pip install --no-cache-dir -r requirements.txt 
 
 # Install torch with CUDA support
 RUN pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
