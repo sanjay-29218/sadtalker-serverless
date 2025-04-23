@@ -4,6 +4,7 @@ import uuid
 import runpod
 from urllib.parse import unquote
 from src.gradio_demo import SadTalker
+from src.utils.text2speech import TTSTalker  # Import TTSTalker
 import logging # Import logging
 import base64 # Import base64 earlier
 
@@ -28,6 +29,13 @@ logging.info(f"Attempting to initialize SadTalker...")
 logging.info(f"Using checkpoint_path: {CHECKPOINT_PATH}")
 logging.info(f"Using config_path: {CONFIG_PATH}")
 
+# Initialize TTS
+try:
+    tts_model = TTSTalker()
+    logging.info("TTS model initialized successfully.")
+except Exception as e:
+    logging.error(f"Failed to initialize TTS model: {str(e)}", exc_info=True)
+    tts_model = None
 
 # Check if checkpoint path exists and list contents (optional but helpful for debugging)
 try:
@@ -70,18 +78,28 @@ def handler(job):
     temp_audio_path = None
     temp_result_dir = None
     video_path = None # Initialize video_path
+    generated_audio_path = None  # For TTS-generated audio
 
     try:
         # Get inputs
         job_input = job['input']
         image_data = job_input.get('image')
         audio_data = job_input.get('audio')
+        text_input = job_input.get('text')  # New text input field
+        language = job_input.get('language', 'en')  # Optional language parameter for TTS
         logging.info("Received job input.")
 
         # Validate inputs
-        if not image_data or not audio_data:
-            logging.error("Missing image or audio data.")
-            return {"error": "Both image and audio are required"}
+        if not image_data:
+            logging.error("Missing image data.")
+            return {"error": "Image is required"}
+        
+        if not audio_data and not text_input:
+            logging.error("Neither audio nor text provided.")
+            return {"error": "Either audio or text input is required"}
+
+        if audio_data and text_input:
+            logging.warning("Both audio and text provided, using audio input.")
 
         # Get processing parameters
         preprocess = job_input.get('preprocess', 'crop')
@@ -113,15 +131,28 @@ def handler(job):
                 else:
                     raise ValueError("Unsupported image data format")
 
-
-            with open(temp_audio_path, "wb") as f:
-                 # Simplistic check for base64, might need refinement
-                if isinstance(audio_data, str): # and is_base64(audio_data): # Add a helper is_base64 if needed
-                     f.write(base64.b64decode(audio_data))
-                # TODO: Add handling for URL inputs if needed
-                # elif is_url(audio_data): download_file(audio_data, f)
-                else:
-                    raise ValueError("Unsupported audio data format")
+            # Handle audio input (either from direct audio or generated from text)
+            if audio_data:
+                logging.info("Using provided audio data...")
+                with open(temp_audio_path, "wb") as f:
+                    if isinstance(audio_data, str):
+                         f.write(base64.b64decode(audio_data))
+                    else:
+                        raise ValueError("Unsupported audio data format")
+                logging.info("Audio file saved successfully.")
+            elif text_input and tts_model:
+                logging.info(f"Generating audio from text: {text_input[:50]}...")
+                try:
+                    generated_audio_path = tts_model.test(text_input, language=language)
+                    # Copy the generated audio to our temp path
+                    shutil.copy2(generated_audio_path, temp_audio_path)
+                    logging.info("Audio generated successfully from text.")
+                except Exception as e:
+                    logging.error(f"Failed to generate audio from text: {str(e)}", exc_info=True)
+                    return {"error": f"Text-to-speech conversion failed: {str(e)}"}
+            else:
+                logging.error("No valid audio input and TTS model not available.")
+                return {"error": "No valid audio input and TTS model not available"}
             logging.info("Input files saved successfully.")
 
 
@@ -203,6 +234,12 @@ def handler(job):
                 logging.info(f"Removed temp audio: {temp_audio_path}")
             except Exception as e:
                  logging.warning(f"Failed to remove temp audio {temp_audio_path}: {e}")
+        if generated_audio_path and os.path.exists(generated_audio_path):
+            try:
+                os.remove(generated_audio_path)
+                logging.info(f"Removed generated audio: {generated_audio_path}")
+            except Exception as e:
+                logging.warning(f"Failed to remove generated audio {generated_audio_path}: {e}")
         # Note: video_path points *inside* temp_result_dir, so removing the dir handles it.
         if temp_result_dir and os.path.exists(temp_result_dir):
              try:
