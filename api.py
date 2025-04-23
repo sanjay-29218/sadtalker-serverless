@@ -9,6 +9,7 @@ from typing import Optional, List
 from src.gradio_demo import SadTalker
 import uuid
 import glob
+import runpod
 from urllib.parse import quote
 app = FastAPI(title="SadTalker API")
 
@@ -36,6 +37,63 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Initialize SadTalker
 sad_talker = SadTalker(checkpoint_path='checkpoints', config_path='src/config', lazy_load=True)
 
+def handler(job):
+    # handler function to run the runpod
+    job_input = job['input']
+    image_data = job_input['image']
+    audio_data = job_input['audio']
+    preprocess = job_input['preprocess']
+    still_mode = job_input['still_mode']
+    use_enhancer = job_input['use_enhancer']
+    batch_size = job_input['batch_size']
+    size = job_input['size']
+    pose_style = job_input['pose_style']
+    if not image_data or not audio_data:
+        raise HTTPException(status_code=400, detail="Both image and audio files are required")
+    
+    # Save uploaded files
+    image_filename = f"{uuid.uuid4()}.jpg"
+    audio_filename = f"{uuid.uuid4()}.wav"
+    image_path = os.path.join(UPLOAD_DIR, image_filename)
+    audio_path = os.path.join(UPLOAD_DIR, audio_filename)
+    # Decode base64 or handle file paths (assuming inputs are URLs or base64)
+    # For simplicity, assume inputs are file paths or URLs; adjust based on your client
+    with open(image_path, "wb") as f:
+        f.write(urllib.parse.unquote(image_data).encode())
+    with open(audio_path, "wb") as f:
+        f.write(urllib.parse.unquote(audio_data).encode())
+
+    # Generate video using SadTalker
+    try:
+        video_path = sad_talker.test(
+            source_image=image_path,
+            driven_audio=audio_path,
+            preprocess=preprocess,
+            still_mode=still_mode,
+            use_enhancer=use_enhancer,
+            batch_size=batch_size,
+            size=size,
+            pose_style=pose_style,
+            result_dir=RESULTS_DIR
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+    # Move the generated video to results directory
+    video_filename = f"{uuid.uuid4()}.mp4"
+    final_video_path = os.path.join(RESULTS_DIR, video_filename)
+    shutil.move(video_path, final_video_path)
+
+    # Clean up uploaded files
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
+
+    # Return the video path or URL
+    return {"video_path": final_video_path}
+    
+    
 @app.get("/", response_class=HTMLResponse)
 async def root():
     try:
