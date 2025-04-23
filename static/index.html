@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SadTalker Web Interface</title>
+    <style>
+      :root {
+        --primary-color: #007bff;
+        --primary-hover: #0056b3;
+        --background-color: #f8f9fa;
+        --card-background: #ffffff;
+        --text-color: #333;
+        --muted-text-color: #6c757d;
+        --border-color: #dee2e6;
+        --error-color: #dc3545;
+        --success-color: #28a745;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --border-radius: 6px;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue",
+          sans-serif;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+      }
+
+      .container {
+        background-color: var(--card-background);
+        padding: 30px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-md);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #212529;
+      }
+
+      h1 {
+        font-size: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        margin-top: 2.5rem;
+      }
+
+      h3 {
+        font-size: 1.2rem;
+        color: var(--muted-text-color);
+        margin-bottom: 1rem;
+      }
+
+      .upload-section,
+      .settings {
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #fdfdff; /* Slightly off-white */
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      input[type="file"],
+      select,
+      input[type="number"] {
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        background-color: var(--card-background);
+        box-sizing: border-box;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        font-size: 0.95rem;
+      }
+
+      input[type="file"] {
+        padding: 6px 12px;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--primary-color);
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+
+      input[type="checkbox"] {
+        margin-right: 8px;
+      }
+
+      .form-group label input[type="checkbox"] {
+        vertical-align: middle;
+        margin-right: 0.5em;
+      }
+
+      .form-group label {
+        display: inline-flex; /* Align checkbox and text */
+        align-items: center;
+      }
+
+      .preview {
+        margin-top: 15px;
+        max-width: 200px;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+      }
+
+      #audio-preview {
+        width: 100%;
+        margin-top: 15px;
+      }
+
+      button {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+        display: inline-block;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: var(--primary-hover);
+      }
+
+      button:disabled {
+        background-color: #adb5bd;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .loading {
+        display: none;
+        margin: 25px 0;
+        padding: 15px;
+        background-color: #e9ecef;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .loading::before {
+        content: "⏳ ";
+      }
+
+      #result-video {
+        max-width: 100%;
+        margin-top: 25px;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+      }
+
+      .error {
+        color: var(--error-color);
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+      }
+
+      .video-grid {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fill,
+          minmax(280px, 1fr)
+        ); /* Slightly smaller min width */
+        gap: 25px;
+        margin-top: 30px;
+      }
+
+      .video-item {
+        background: var(--card-background);
+        padding: 15px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .video-item:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-3px);
+      }
+
+      .video-item video {
+        width: 100%;
+        border-radius: var(--border-radius);
+        margin-bottom: 15px;
+        background-color: #eee; /* Placeholder background */
+      }
+
+      .video-item h4 {
+        margin: 0 0 10px 0; /* Adjusted margins */
+        word-break: break-all;
+        font-size: 0.95rem;
+        color: var(--text-color);
+        font-weight: 600;
+      }
+
+      .input-preview {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+      }
+
+      .input-preview > div {
+        /* Target the image and audio containers */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .input-preview img {
+        width: 100%;
+        border-radius: var(--border-radius);
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+      }
+
+      .input-preview audio {
+        width: 100%;
+        margin-top: auto; /* Push audio controls down */
+        height: 40px; /* Consistent height */
+      }
+
+      .input-label {
+        font-size: 0.8rem;
+        color: var(--muted-text-color);
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+
+      .timestamp {
+        font-size: 0.8rem;
+        color: var(--muted-text-color);
+        margin-top: auto; /* Push timestamp to bottom */
+        padding-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>SadTalker Web Interface</h1>
+
+      <div class="upload-section">
+        <h2>Upload Files</h2>
+        <div class="form-group">
+          <label for="image">Source Image:</label>
+          <input
+            type="file"
+            id="image"
+            accept="image/*"
+            onchange="previewImage(this)"
+          />
+          <img
+            id="image-preview"
+            class="preview"
+            style="display: none"
+            alt="Image Preview"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="audio">Audio File:</label>
+          <input type="file" id="audio" accept="audio/*" />
+          <audio id="audio-preview" controls style="display: none"></audio>
+        </div>
+      </div>
+
+      <div class="settings">
+        <h2>Settings</h2>
+        <div class="form-group">
+          <label for="preprocess">Preprocess Type:</label>
+          <select id="preprocess">
+            <option value="crop">Crop</option>
+            <option value="resize">Resize</option>
+            <option value="full">Full</option>
+            <option value="extcrop">Extended Crop</option>
+            <option value="extfull">Extended Full</option>
+          </select>
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+          "
+        >
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="still-mode" /> Still Mode
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="use-enhancer" /> Use Enhancer
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="batch-size">Batch Size:</label>
+            <input type="number" id="batch-size" value="1" min="1" max="10" />
+          </div>
+
+          <div class="form-group">
+            <label for="size">Size:</label>
+            <select id="size">
+              <option value="256">256</option>
+              <option value="512">512</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="pose-style">Pose Style:</label>
+            <input type="number" id="pose-style" value="0" min="0" max="46" />
+          </div>
+        </div>
+      </div>
+
+      <button onclick="generateVideo()" id="generate-btn">
+        Generate Video
+      </button>
+
+      <div class="loading" id="loading">
+        Processing... This may take a few minutes.
+      </div>
+
+      <div id="error" class="error" style="display: none"></div>
+
+      <div id="result-container" style="margin-top: 30px">
+        <h2>Generated Video</h2>
+        <video id="result-video" controls style="display: none"></video>
+      </div>
+
+      <div id="previous-videos">
+        <h2>Previously Generated Videos</h2>
+        <div class="video-grid" id="video-grid"></div>
+      </div>
+    </div>
+
+    <script>
+      function previewImage(input) {
+        const preview = document.getElementById("image-preview");
+        if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+
+      document.getElementById("audio").addEventListener("change", function (e) {
+        const preview = document.getElementById("audio-preview");
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+
+      async function generateVideo() {
+        const imageFile = document.getElementById("image").files[0];
+        const audioFile = document.getElementById("audio").files[0];
+
+        if (!imageFile || !audioFile) {
+          document.getElementById("error").textContent =
+            "Please select both image and audio files.";
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("audio", audioFile);
+        formData.append(
+          "preprocess",
+          document.getElementById("preprocess").value
+        );
+        formData.append(
+          "still_mode",
+          document.getElementById("still-mode").checked
+        );
+        formData.append(
+          "use_enhancer",
+          document.getElementById("use-enhancer").checked
+        );
+        formData.append(
+          "batch_size",
+          document.getElementById("batch-size").value
+        );
+        formData.append("size", document.getElementById("size").value);
+        formData.append(
+          "pose_style",
+          document.getElementById("pose-style").value
+        );
+
+        const generateBtn = document.getElementById("generate-btn");
+        const loading = document.getElementById("loading");
+        const error = document.getElementById("error");
+        const resultVideo = document.getElementById("result-video");
+        const resultContainer = document.getElementById("result-container");
+
+        generateBtn.disabled = true;
+        loading.style.display = "block";
+        error.textContent = "";
+        error.style.display = "none";
+        resultVideo.style.display = "none";
+        resultContainer.style.display = "none";
+
+        try {
+          const response = await fetch("/generate", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            let detail = errorText;
+            try {
+              const errorJson = JSON.parse(errorText);
+              detail = errorJson.detail || errorText;
+            } catch (e) {
+              /* Ignore if not JSON */
+            }
+            throw new Error(
+              `HTTP error! status: ${response.status} - ${detail}`
+            );
+          }
+
+          const videoBlob = await response.blob();
+          const videoUrl = URL.createObjectURL(videoBlob);
+          resultVideo.src = videoUrl;
+          resultVideo.style.display = "block";
+          resultContainer.style.display = "block";
+
+          // Refresh video list after successful generation
+          loadVideos();
+        } catch (e) {
+          error.textContent = `Error: ${e.message}`;
+          error.style.display = "block";
+        } finally {
+          generateBtn.disabled = false;
+          loading.style.display = "none";
+        }
+      }
+
+      async function loadVideos() {
+        const videoGrid = document.getElementById("video-grid");
+        try {
+          const response = await fetch("/videos");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const videos = await response.json();
+
+          videoGrid.innerHTML = ""; // Clear previous videos
+
+          if (videos.length === 0) {
+            videoGrid.innerHTML =
+              '<p style="color: var(--muted-text-color);">No videos generated yet.</p>';
+            return;
+          }
+
+          videos.forEach((video) => {
+            const videoItem = document.createElement("div");
+            videoItem.className = "video-item";
+
+            // Input files preview
+            if (video.input_image || video.input_audio) {
+              const inputPreview = document.createElement("div");
+              inputPreview.className = "input-preview";
+
+              if (video.input_image) {
+                const imageLabel = document.createElement("div");
+                imageLabel.className = "input-label";
+                imageLabel.textContent = "Source Image";
+
+                const imagePreview = document.createElement("img");
+                imagePreview.src = video.input_image;
+                imagePreview.alt = "Source image";
+
+                const imageContainer = document.createElement("div");
+                imageContainer.appendChild(imageLabel);
+                imageContainer.appendChild(imagePreview);
+                inputPreview.appendChild(imageContainer);
+              }
+
+              if (video.input_audio) {
+                const audioLabel = document.createElement("div");
+                audioLabel.className = "input-label";
+                audioLabel.textContent = "Source Audio";
+
+                const audioPreview = document.createElement("audio");
+                audioPreview.controls = true;
+                audioPreview.src = video.input_audio;
+
+                const audioContainer = document.createElement("div");
+                audioContainer.appendChild(audioLabel);
+                audioContainer.appendChild(audioPreview);
+                inputPreview.appendChild(audioContainer);
+              }
+
+              videoItem.appendChild(inputPreview);
+            }
+
+            // Generated video
+            const videoElement = document.createElement("video");
+            videoElement.controls = true;
+            videoElement.src = video.url;
+            videoItem.appendChild(videoElement);
+
+            // Video name
+            const title = document.createElement("h4");
+            title.textContent = video.display_name;
+
+            // Timestamp
+            const timestamp = document.createElement("div");
+            timestamp.className = "timestamp";
+            const date = new Date(video.timestamp * 1000);
+            timestamp.textContent = date.toLocaleString();
+
+            videoItem.appendChild(title);
+            videoItem.appendChild(timestamp);
+            videoGrid.appendChild(videoItem);
+          });
+        } catch (error) {
+          console.error("Error loading videos:", error);
+          videoGrid.innerHTML = `<p class="error">Failed to load videos: ${error.message}</p>`;
+        }
+      }
+
+      // Initial load
+      document.addEventListener("DOMContentLoaded", () => {
+        loadVideos();
+        // Hide result container initially
+        document.getElementById("result-container").style.display = "none";
+        document.getElementById("error").style.display = "none";
+      });
+    </script>
+  </body>
+</html>
